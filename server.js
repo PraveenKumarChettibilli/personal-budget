@@ -1,53 +1,66 @@
-const express = require('express');
-const cors = require('cors');
+const mongoose = require("mongoose");
+const budgetModel = require("./data_module/my_budget_data");
+const bodyParser = require("body-parser");
+const express = require("express");
+const cors = require("cors");
 const app = express();
 const port = 3000;
 
-app.use(cors())
-app.use('/', express.static('public'));
-
-const budget = {
-    myBudget:[
-    {
-        title: 'Personal Expenses',
-        budget: 300
-    },
-    {
-        title: 'Rent',
-        budget: 350
-    },
-    {
-        title: 'Market place',
-        budget: 85
-    },
-    {
-        title: 'Groceries',
-        budget: 30
-    },
-    {
-        title: 'Gas',
-        budget: 250
-    },
-    {
-        title: 'Travel',
-        budget: 450
-    },
-    {
-        title: 'Other',
-        budget: 359
-    },
-    
-]
+const corsOptions = {
+  origin: "http://localhost:3000",
 };
+app.use(cors(corsOptions));
 
-app.get('/', (req, res) => {
-    res.send('hello world!');
+app.use(bodyParser.json());
+app.use("/", express.static("public"));
+
+app.get("/budget", (req, res) => {
+  mongoose.connect("mongodb://127.0.0.1:27017/budgetApp", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("Connected to the Database");
+    budgetModel.find({})
+      .then((data) => {
+        res.json(data);
+        console.log(data);
+        mongoose.connection.close();
+      })
+      .catch((connectionError) => {
+        console.error(connectionError);
+      });
+  })
+  .catch((err) => {
+    console.error(err);
+  });
 });
 
-app.use('/budget', (req, res) => {
-    res.sendFile("C:\\week03\\personal-budget\\server.json");
-})
+app.post("/budget", (req, res) => {
+  mongoose.connect("mongodb://127.0.0.1:27017/budgetApp", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("Connected to the database");
+    const newItem = new budgetModel(req.body);
+    budgetModel.create(newItem) 
+      .then((data) => {
+        res.json(data);
+        console.log(data);
+        mongoose.connection.close();
+      })
+      .catch((connectionError) => {
+        console.error(connectionError);
+        res.status(400).json({error:'Internal Server error-Validation failed'})
+      });
+  })
+  .catch((err) => {
+    console.error(err);
+    res.status(400).json({error:'Internal Server error'})
+  });
+});
 
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
+  console.log(`API served at http://localhost:${port}`);
 });
